@@ -2,6 +2,7 @@ import prisma from "../config/prisma.js";
 import { supabase } from "../config/supabase.js";
 import catchAsync from "../utils/catchAsync.js";
 import serializeBigInt from "../utils/serializeBigInt.js";
+import convertToWebp from "../utils/convertToWebp.js";
 
 // ============================================================
 // HELPER: Ekstrak path file Supabase dari URL publik
@@ -51,11 +52,12 @@ export const createTanggapan = catchAsync(async (req, res, next) => {
 
   let mediaUrls = [];
   if (file) {
-    const uniqueFilename = `${Date.now()}-${file.originalname.replace(/\s/g, '-')}`;
+    const converted = await convertToWebp(file);
+    const uniqueFilename = `${Date.now()}-${converted.originalname.replace(/\s/g, '-')}`;
     const { error: uploadError } = await supabase
       .storage
       .from('laporan_image')
-      .upload(`tanggapan/${uniqueFilename}`, file.buffer, { contentType: file.mimetype });
+      .upload(`tanggapan/${uniqueFilename}`, converted.buffer, { contentType: converted.mimetype });
 
     if (uploadError) throw new Error(`Gagal upload ke Supabase: ${uploadError.message}`);
 
