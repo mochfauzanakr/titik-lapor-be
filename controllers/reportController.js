@@ -591,7 +591,8 @@ export const getNewsReports = catchAsync(async (req, res, next) => {
     where.status = status;
   }
 
-  const reports = await prisma.laporan.findMany({
+  const [reports, totalItems] = await Promise.all([
+    prisma.laporan.findMany({
     where,
     skip,
     take: limit,
@@ -620,9 +621,9 @@ export const getNewsReports = catchAsync(async (req, res, next) => {
         select: { comments: true }
       }
     }
-  });
-
-  const totalItems = await prisma.laporan.count({ where });
+  }),
+    prisma.laporan.count({ where })
+  ]);
   const totalPages = Math.ceil(totalItems / limit);
 
   res.status(200).json({
