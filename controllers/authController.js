@@ -10,7 +10,6 @@ export const registerUser = catchAsync(async (req, res, next) => {
     return res.status(400).json({ error: "Email, password, username, dan p_number harus diisi" });
   }
 
-  // Cek apakah email sudah terdaftar
   const existingUser = await prisma.users.findUnique({
     where: { email },
   });
@@ -19,7 +18,6 @@ export const registerUser = catchAsync(async (req, res, next) => {
     return res.status(400).json({ success: false, error: "Email sudah terdaftar" });
   }
 
-  // Cek apakah nomor telepon sudah terdaftar
   const existingPhone = await prisma.users.findUnique({
     where: { phoneNumber },
   });
@@ -48,19 +46,15 @@ export const loginUser = catchAsync(async (req, res, next) => {
     return res.status(400).json({ success: false, error: "Email dan password harus diisi" });
   }
 
-  console.time("1. Waktu Query Prisma");
   const user = await prisma.users.findUnique({
     where: { email: email },
   });
-  console.timeEnd("1. Waktu Query Prisma");
 
   if (!user) {
     return res.status(401).json({ success: false, error: "Email atau password salah" });
   }
 
-  console.time("2. Waktu Cek Password (Bcrypt)");
   const isPasswordValid = await bcrypt.compare(password, user.password);
-  console.timeEnd("2. Waktu Cek Password (Bcrypt)");
 
   if (!isPasswordValid) {
     return res.status(401).json({ success: false, error: "Email atau password salah" });
@@ -82,7 +76,7 @@ export const loginUser = catchAsync(async (req, res, next) => {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'none' : 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // seminggu expired
+    maxAge: 14 * 24 * 60 * 60 * 1000
   });
 
   res.json({
@@ -143,7 +137,6 @@ export const updateProfile = catchAsync(async (req, res, next) => {
     return res.status(400).json({ success: false, message: 'Minimal satu field harus diisi.' });
   }
 
-  // Cek email unik jika diubah
   if (email) {
     const existing = await prisma.users.findFirst({
       where: { email, NOT: { id: userId } }
