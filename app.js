@@ -3,6 +3,7 @@ import 'dotenv/config';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import compression from 'compression';
 import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoutes.js';
 import categoryRouter from './routes/categoryRoutes.js';
@@ -12,6 +13,7 @@ import commentRouter from './routes/commentRoutes.js';
 import errorHandler from './middlewares/errorHandler.js';
 const app = express()
 
+app.use(compression());
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json()); 
 app.use(morgan('dev'));
