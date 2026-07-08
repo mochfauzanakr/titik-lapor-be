@@ -4,6 +4,7 @@ import catchAsync from "../utils/catchAsync.js";
 import parseCoordinate from "../utils/parseCoordinate.js";
 import serializeBigInt from "../utils/serializeBigInt.js";
 import generateNomorResi from "../utils/generateNomorResi.js";
+import convertToWebp from "../utils/convertToWebp.js";
 
 // ============================================================
 // HELPER: Ekstrak path file Supabase dari URL publik
@@ -56,11 +57,12 @@ export const createReport = catchAsync(async (req, res, next) => {
     });
   }
 
-  const uniqueFilename = `${Date.now()}-${file.originalname.replace(/\s/g, '-')}`;
+  const converted = await convertToWebp(file);
+  const uniqueFilename = `${Date.now()}-${converted.originalname.replace(/\s/g, '-')}`;
   const { error: uploadError } = await supabase
     .storage
     .from('laporan_image')
-    .upload(`lampiran/${uniqueFilename}`, file.buffer, { contentType: file.mimetype });
+    .upload(`lampiran/${uniqueFilename}`, converted.buffer, { contentType: converted.mimetype });
 
   if (uploadError) throw new Error(`Gagal upload ke Supabase: ${uploadError.message}`);
 
@@ -134,11 +136,12 @@ export const editReport = catchAsync(async (req, res, next) => {
   let updatedMediaUrls = existingReport.mediaUrls;
 
   if (file) {
-    const uniqueFilename = `${Date.now()}-${file.originalname.replace(/\s/g, '-')}`;
+    const converted = await convertToWebp(file);
+    const uniqueFilename = `${Date.now()}-${converted.originalname.replace(/\s/g, '-')}`;
     const { error: uploadError } = await supabase
       .storage
       .from('laporan_image')
-      .upload(`lampiran/${uniqueFilename}`, file.buffer, { contentType: file.mimetype });
+      .upload(`lampiran/${uniqueFilename}`, converted.buffer, { contentType: converted.mimetype });
 
     if (uploadError) throw new Error(`Gagal upload file baru ke Supabase: ${uploadError.message}`);
 
@@ -152,14 +155,8 @@ export const editReport = catchAsync(async (req, res, next) => {
         .map(url => extractStoragePath(url))
         .filter(Boolean);
 
-
       if (oldFilePaths.length > 0) {
-        const { data: removeData, error: removeError } = await supabase.storage.from('laporan_image').remove(oldFilePaths);
-        if (removeError) {
-          console.error('Gagal hapus file lama dari Supabase:', removeError.message);
-        } else {
-          console.log('File lama berhasil dihapus:', removeData);
-        }
+        await supabase.storage.from('laporan_image').remove(oldFilePaths);
       }
     }
 
