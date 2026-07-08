@@ -5,6 +5,8 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import compression from 'compression';
 import helmet from 'helmet';
+import { apiLimiter, authLimiter } from './middlewares/rateLimiter.js';
+import { sanitizeBody } from './middlewares/sanitize.js';
 import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoutes.js';
 import categoryRouter from './routes/categoryRoutes.js';
@@ -16,10 +18,21 @@ const app = express()
 
 app.use(helmet());
 app.use(compression());
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json()); 
-app.use(morgan('dev'));
+app.use(cors({ origin: process.env.FRONTEND_URL || true, credentials: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
+app.use(sanitizeBody);
+
+
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan('dev'));
+}
+
+app.use('/api', apiLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/category", categoryRouter);
@@ -29,10 +42,9 @@ app.use("/api/reports", commentRouter);
 
 app.use(errorHandler);
 
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(process.env.PORT || 5000, () => {
-    console.log(`Example app listening on port ${process.env.PORT || 3000}`);
-  });
-}
+app.listen(process.env.PORT || 5000, () => {
+  console.log(`Server running on port ${process.env.PORT || 5000}`);
+});
 
 export default app;
+
