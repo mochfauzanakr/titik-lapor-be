@@ -111,10 +111,9 @@ export const getTanggapanByLaporan = catchAsync(async (req, res, next) => {
     });
   }
 
-  const totalItems = await prisma.tanggapan.count({ where: { laporanId } });
-  const totalPages = Math.ceil(totalItems / limit);
-
-  const tanggapanList = await prisma.tanggapan.findMany({
+  const [totalItems, tanggapanList] = await Promise.all([
+    prisma.tanggapan.count({ where: { laporanId } }),
+    prisma.tanggapan.findMany({
     where: { laporanId },
     orderBy: { createdAt: 'asc' },
     skip,
@@ -131,9 +130,11 @@ export const getTanggapanByLaporan = catchAsync(async (req, res, next) => {
       },
       _count: { select: { comments: true } }
     }
-  });
+  })
+  ]);
 
-  
+  const totalPages = Math.ceil(totalItems / limit);
+
   res.status(200).json(serializeBigInt({
     success: true,
     message: 'Berhasil mengambil data tanggapan.',

@@ -217,7 +217,8 @@ export const getAllReports = catchAsync(async (req, res, next) => {
     where.status = status;
   }
 
-  const reports = await prisma.laporan.findMany({
+  const [reports, totalItems] = await Promise.all([
+    prisma.laporan.findMany({
     where,
     skip: skip,
     take: limit,
@@ -246,9 +247,9 @@ export const getAllReports = catchAsync(async (req, res, next) => {
         select: { comments: true, tanggapan: true }
       }
     }
-  });
-
-  const totalItems = await prisma.laporan.count({ where });
+  }),
+    prisma.laporan.count({ where })
+  ]);
   const totalPages = Math.ceil(totalItems / limit);
 
   const serializedReports = serializeBigInt(reports);
